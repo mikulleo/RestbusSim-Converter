@@ -1,7 +1,7 @@
 /*@@var:  */
 variables {
 	int x = 5;
-	float y;
+	float y[4][2];
 }
 /*@@end */
 
@@ -10,6 +10,10 @@ variables {
 on envVar initialize
 {
     ILSetSignal( Ctrl_C_Stat1_AR::ReturnKey_Psd_UB, 1);
-    ILSetSignal( Ctrl_C_Stat1_AR::RadioKey_Psd_UB, 1);
 }
 /*@@end*/
+
+int myFunc()
+{
+	x = 1;
+}

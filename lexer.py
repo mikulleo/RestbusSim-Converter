@@ -1,7 +1,7 @@
 # lexer for the compiler 
 #
 # Author: Leos Mikulka (mikulkal@hotmail.com)
-# Date:
+# Date: January 18, 2015
 
 __author__ = "Leos Mikulka"
 __license__ = "GPL"
@@ -47,8 +47,10 @@ class Lexer:
         'EQ',       # equals
         'COM',      # comma
         'SMC',      # semicolon
-        'RCBR',     # right curly bracket
-        'LCBR',     # left curly bracket  
+        'RCBR',     # right curly brace
+        'LCBR',     # left curly brace 
+        'RBRK',     # right bracket 
+        'LBRK',     # left bracket
         'LPAR',     # left parenthese
         'RPAR',     # right parenthese
         'NUM',      # number
@@ -61,6 +63,7 @@ class Lexer:
         'CppCOMMENT',   # C++ style comment
         'CAPLBEGIN',    # CAPL begin sectin, e.g. /*@@var: */
         'CAPLEND',      # CAPL end, i.e. /*@@end */
+        'ARRAY',        # single or multi-dimensional array
         'DATATYPE',     # int, float, ...
         'CAPLEVENT',    # CAPL event 
         'CAPLEVENT_word',  # reserved keywords for CAPL event
@@ -82,6 +85,8 @@ class Lexer:
     t_SMC = r'\;'
     t_LCBR = r'\{'
     t_RCBR = r'\}'
+    t_LBRK = r'\['
+    t_RBRK = r'\]'
     t_LPAR = r'\('
     t_RPAR = r'\)'
     t_NUM = r'[0-9]+'
@@ -102,6 +107,7 @@ class Lexer:
     capl_begin = r'\/\*\@\@(' + t_ID + r')*(\:)' + r'(' + t_WS + r')*(' + t_ID + r')?(\:)?(' + t_WS + r')*\*\/'
     capl_end = r'\/\*\@\@end(' + t_WS + r')*\*\/'
 
+    array_decl = r'(' + t_LBRK + r')[0-9]*(' + t_RBRK + r')((' + t_LBRK + r')[0-9]*(' + t_RBRK + r'))*'
     
 
     @TOKEN(float_const)            # with decimal point (have precedence of DEC)
@@ -128,6 +134,10 @@ class Lexer:
     @TOKEN(capl_end)
     def t_CAPLEND(self,t):
         return t 
+
+    @TOKEN(array_decl)
+    def t_ARRAY(self,t):
+        return t
     
 
     def getTokens(self):

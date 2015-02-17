@@ -10,6 +10,7 @@ __license__ = "GPL"
 __version__ = "1.0"
 __email__ = "mikulkal@hotmail.com"
 
+
 import tkinter as tk
 from tkinter import *
 from tkinter import filedialog
