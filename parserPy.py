@@ -75,11 +75,14 @@ class Parser:
 
     def p_user_function(self,p):
         ''' user_function : entry LPAR RPAR
-                          | declaration_type entry LPAR RPAR '''
-        if len(p) == 3:
+                          | declaration_type entry LPAR RPAR
+                          | declaration_type entry LPAR parameter_list RPAR '''
+        if len(p) == 4:
             p[0] = p[1]
-        else:
+        elif len(p) == 5:
             p[0] = p[1],p[2]
+        else:
+            p[0] = p[1],p[2],p[4]
 
     def p_capl_event_declaration(self,p):           # e.g. on envVar initialize
         ''' capl_event_declaration : CAPLBEGIN on_event entry'''
@@ -94,6 +97,25 @@ class Parser:
         ''' statement : capl_function
                       | compound_statement '''
         p[0] = p[1]
+
+    def p_parameter_list(self,p):
+        ''' parameter_list : parameter_declaration
+                           | parameter_list comma parameter_declaration'''
+        if len(p) == 2:
+            p[0] = p[1]
+        else:
+            if not isinstance(p[1],tuple):
+                p[0] = p[1],p[3]
+            else:
+                p[0] = p[1]+(p[3],)                 # append to the tuple
+
+    def p_parameter_declaration(self,p):
+        ''' parameter_declaration : entry
+                                  | declaration_type entry '''
+        if len(p) == 2:
+            p[0] = Node("PARAM",None,p[1])
+        else:
+            p[0] = Node("PARAM",None,(p[1],p[2]))
 
     def p_declaration(self,p):                      # terminated declaration with ;
         ''' declaration : declaration_body SMC '''
@@ -537,7 +559,42 @@ class Parser:
             function_UD_name_rest = function_UD_name[1:len(function_UD_name)]
 
             if (function_UD_type == 'void'):
-                self.string += "Sub %s%s()\n" % (function_UD_name_first,function_UD_name_rest)
+                if len(function_param.leaf) == 2:
+                    self.string += "Sub %s%s()\n" % (function_UD_name_first,function_UD_name_rest)
+                else:
+                    self.string += "Sub %s%s" % (function_UD_name_first,function_UD_name_rest)
+                    parameters = function_param.leaf[2]
+
+                    if not isinstance(parameters,tuple):                # only one parameter...
+                        if isinstance(parameters.leaf,Node):            # ...without specified type
+                            param_name = parameters.leaf.leaf 
+                            self.string += "(%s)\n" % param_name
+                        else:                                           # ... with specified type
+                            param_type_first = (parameters.leaf[0].leaf[0]).upper()
+                            param_type_rest = parameters.leaf[0].leaf[1:len(parameters.leaf[0].leaf)]
+                            param_name = parameters.leaf[1].leaf
+                            self.string += "(%s As %s%s)\n" % (param_name,param_type_first,param_type_rest)
+                    else:
+                        for i in range(0,len(parameters)):                    # several parameters...
+                            if isinstance(parameters[i].leaf,Node):           # ...without specified type
+                                param_name = parameters[i].leaf.leaf
+                                if i == 0: 
+                                    self.string += "(%s," % param_name
+                                elif i == (len(parameters)-1):
+                                    self.string += "%s)\n" % param_name
+                                else:
+                                    self.string += "%s," % param_name
+                            else:                                             # ... with specified type
+                                param_type_first = (parameters[i].leaf[0].leaf[0]).upper()
+                                param_type_rest = parameters[i].leaf[0].leaf[1:len(parameters[i].leaf[0].leaf)]
+                                param_name = parameters[i].leaf[1].leaf
+                                if i == 0:
+                                    self.string += "(%s As %s%s," % (param_name,param_type_first,param_type_rest)
+                                elif i == (len(parameters)-1):
+                                    self.string += "%s As %s%s)\n" % (param_name,param_type_first,param_type_rest)
+                                else: 
+                                    self.string += "%s As %s%s," % (param_name,param_type_first,param_type_rest)
+
                 statements = function_param.children 
                 self.inside = 1
                 if not isinstance(statements,tuple):
@@ -547,7 +604,42 @@ class Parser:
                         self.generate_code(statement)
                 self.string += "End Sub\n"
             else:
-                self.string += "Function %s%s() as %s%s\n" % (function_UD_name_first,function_UD_name_rest,function_UD_type_first,function_UD_type_rest)
+                if len(function_param.leaf) == 2:
+                    self.string += "Function %s%s()\n" % (function_UD_name_first,function_UD_name_rest)
+                else:
+                    self.string += "Function %s%s" % (function_UD_name_first,function_UD_name_rest)
+                    parameters = function_param.leaf[2]
+
+                    if not isinstance(parameters,tuple):                # only one parameter...
+                        if isinstance(parameters.leaf,Node):            # ...without specified type
+                            param_name = parameters.leaf.leaf 
+                            self.string += "(%s)\n" % param_name
+                        else:                                           # ... with specified type
+                            param_type_first = (parameters.leaf[0].leaf[0]).upper()
+                            param_type_rest = parameters.leaf[0].leaf[1:len(parameters.leaf[0].leaf)]
+                            param_name = parameters.leaf[1].leaf
+                            self.string += "(%s As %s%s)\n" % (param_name,param_type_first,param_type_rest)
+                    else:
+                        for i in range(0,len(parameters)):                    # several parameters...
+                            if isinstance(parameters[i].leaf,Node):           # ...without specified type
+                                param_name = parameters[i].leaf.leaf
+                                if i == 0: 
+                                    self.string += "(%s," % param_name
+                                elif i == (len(parameters)-1):
+                                    self.string += "%s) as %s%s\n" % (param_name,function_UD_type_first,function_UD_type_rest)
+                                else:
+                                    self.string += "%s," % param_name
+                            else:                                             # ... with specified type
+                                param_type_first = (parameters[i].leaf[0].leaf[0]).upper()
+                                param_type_rest = parameters[i].leaf[0].leaf[1:len(parameters[i].leaf[0].leaf)]
+                                param_name = parameters[i].leaf[1].leaf
+                                if i == 0:
+                                    self.string += "(%s As %s%s," % (param_name,param_type_first,param_type_rest)
+                                elif i == (len(parameters)-1):
+                                    self.string += "%s As %s%s) as %s%s\n" % (param_name,param_type_first,param_type_rest,function_UD_type_first,function_UD_type_rest)
+                                else: 
+                                    self.string += "%s As %s%s," % (param_name,param_type_first,param_type_rest)
+
                 statements = function_param.children  
                 self.inside = 1
                 if not isinstance(statements,tuple):
