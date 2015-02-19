@@ -39,12 +39,59 @@ class Lexer:
     numbers = {
         'dec_num' : 'DEC_NUM',
         'float_num' : 'FLOAT_NUM',
+        'hex_num' : 'HEX_NUM',
         }
- 
+
     # list of tokens
     tokens = [
+        # arithmetic operators
+        'PLUS',
+        'MINUS',
+        'TIMES',
+        'DIVIDE',
+        'MOD',
+        'INCREMENT',
+        'DECREMENT',
+
+        # assignment operators
+        'EQ',
+        'ADD_EQ',
+        'SUB_EQ',
+        'MULT_EQ',
+        'DIV_EQ',
+        'MOD_EQ',
+        'LSHIFT_EQ',
+        'RSHIFT_EQ',
+        'AND_EQ',
+        'OR_EQ',
+        'XOR_EQ',
+
+        # boolean operators
+        'NOT',
+        'OR',
+        'AND',
+
+        # bitwise operators
+        'COMPLEMENT',
+        'BIT_AND',
+        'BIT_OR',
+        'BIT_XOR',
+        'LSHIFT',
+        'RSHIFT',
+
+        # relation operators
+        'EQ_TEST',
+        'NOT_EQ_TEST',
+        'GT',
+        'GTE',
+        'LT',
+        'LTE',
+
+        # misc operatprs
+        'DOT',
+        'CONDITION_EVAL',
+
         'WS',
-        'EQ',       # equals
         'COM',      # comma
         'SMC',      # semicolon
         'RCBR',     # right curly brace
@@ -54,7 +101,6 @@ class Lexer:
         'LPAR',     # left parenthese
         'RPAR',     # right parenthese
         'NUM',      # number
-        'TIMES',    # multiply
         'STRING',
         'CHARC',    # single character
         'ID',       # identifier
@@ -79,8 +125,52 @@ class Lexer:
         return t
 
     # regular expressions
-    
+
+    # arithmetic operators
+    t_PLUS = r'\+'
+    t_MINUS = r'\-'
+    t_TIMES = r'\*'
+    t_DIVIDE = r'/'
+    t_MOD = r'\%'
+    t_INCREMENT = r'\+\+'
+    t_DECREMENT = r'--'
+
+    # assignment operators
     t_EQ = r'\='
+    t_ADD_EQ = r'\+\='
+    t_SUB_EQ = r'\-\='
+    t_MULT_EQ = r'\*\='
+    t_LSHIFT_EQ = r'\<\<\='
+    t_RSHIFT_EQ = r'\>\>\='
+    t_AND_EQ = r'\&\='
+    t_OR_EQ = r'\|\='
+    t_XOR_EQ = r'\^\='
+
+    # boolean operators
+    t_NOT = r'\!'
+    t_OR = r'\|\|'
+    t_AND = r'\&\&'
+
+    # bitwise operators
+    t_COMPLEMENT = r'\~'
+    t_BIT_AND = r'\&'
+    t_BIT_OR = r'\|'
+    t_BIT_XOR = r'\^'
+    t_LSHIFT = r'\<\<'
+    t_RSHIFT = r'\>\>'
+
+    # relation operators
+    t_EQ_TEST = r'\=\='
+    t_NOT_EQ_TEST = r'\!\='
+    t_GT = r'\>'
+    t_GTE = r'\>\='
+    t_LT = r'\<'
+    t_LTE = r'\<\='
+
+    # misc operators
+    t_DOT = r'\.'
+    t_CONDITION_EVAL = r'\?\:'
+
     t_COM = r'\,'
     t_SMC = r'\;'
     t_LCBR = r'\{'
@@ -90,7 +180,6 @@ class Lexer:
     t_LPAR = r'\('
     t_RPAR = r'\)'
     t_NUM = r'[0-9]+'
-    t_TIMES = r'\*'
     t_STRING = r'\"(\\.|[^\\"])(\\.|[^\\"])+\"'
     t_CHARC = r'\"(.)\"'
     t_ID = r'[a-zA-Z_][a-zA-Z0-9_-]*'
@@ -102,6 +191,7 @@ class Lexer:
     #t_VAR = r'(' + t_DATATYPE + r')+(' + t_WS + r')*(' + t_ID + r')*(' + t_WS + r')*\;'
 
     float_const = r'(' + t_NUM + r')\.(' + t_NUM + r')'
+    hex_const = r'(0x)(' + t_NUM + r'|' + r'[A-Z]+)'
 
     on_event_declar = r'(on' + t_WS + r')+(' + t_CAPLEVENT_word + r')+'
     capl_begin = r'\/\*\@\@(' + t_ID + r')*(\:)' + r'(' + t_WS + r')*(' + t_ID + r')?(\:)?(' + t_WS + r')*\*\/'
@@ -109,6 +199,9 @@ class Lexer:
 
     array_decl = r'(' + t_LBRK + r')[0-9]*(' + t_RBRK + r')((' + t_LBRK + r')[0-9]*(' + t_RBRK + r'))*'
     
+    @TOKEN(hex_const)
+    def t_HEX_NUM(self,t):
+        return t
 
     @TOKEN(float_const)            # with decimal point (have precedence of DEC)
     def t_FLOAT_NUM(self,t):

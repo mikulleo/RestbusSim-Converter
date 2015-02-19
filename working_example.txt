@@ -15,5 +15,8 @@ on envVar initialize
 
 int myFunc()
 {
-	x = 1;
+	byte value;
+	x += 0xFF;
+	y = x++;
+	abc = a * b;
 }

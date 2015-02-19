@@ -37,6 +37,15 @@ class Parser:
     inside = 0
     tokens = Lexer().tokens                     # define tokens
 
+    precedence = (
+        ('left','PLUS','MINUS'),
+        ('left','TIMES','DIVIDE','MOD'),
+        ('left','EQ_TEST','NOT_EQ_TEST'),
+        ('left','GT','GTE','LT','LTE'),
+        ('left','BIT_AND','BIT_OR','BIT_XOR'),
+        ('left','LSHIFT','RSHIFT'),
+    )
+
     def p_program(self,p):                          # lines of code
         ''' program : code_fragment
                     | program code_fragment '''
@@ -120,11 +129,14 @@ class Parser:
 
     def p_declaration_single_var(self,p):
         ''' declaration_single : entry
-                               | entry equals initializer'''        # e.g. x = 5
+                               | entry equals expression
+                               | entry assign_operator expression '''
         if len(p) == 2:
             p[0] = p[1]
-        else:
+        elif p[2] == '=':
             p[0] = Node('Assign',p[1],p[3])
+        else:
+            p[0] = Node('Assign_OP',p[1],(p[3],p[2]))
 
     def p_declaration_single_array(self,p):
         ''' declaration_single : entry array_brackets
@@ -139,9 +151,32 @@ class Parser:
         ''' assignment : declaration_single SMC '''
         p[0] = p[1]
 
-    def p_initializer_single(self,p):
-        ''' initializer : unary_expression '''
+    def p_expression(self,p):
+        ''' expression : binary_expression '''
         p[0] = p[1]
+
+    def p_binary_expression(self,p):
+        ''' binary_expression : unary_expression
+                              | binary_expression PLUS binary_expression
+                              | binary_expression MINUS binary_expression
+                              | binary_expression TIMES binary_expression
+                              | binary_expression DIVIDE binary_expression
+                              | binary_expression MOD binary_expression
+                              | binary_expression EQ_TEST binary_expression
+                              | binary_expression NOT_EQ_TEST binary_expression
+                              | binary_expression GT binary_expression
+                              | binary_expression GTE binary_expression
+                              | binary_expression LT binary_expression
+                              | binary_expression LTE binary_expression
+                              | binary_expression BIT_AND binary_expression
+                              | binary_expression BIT_OR binary_expression
+                              | binary_expression BIT_XOR binary_expression
+                              | binary_expression LSHIFT binary_expression
+                              | binary_expression RSHIFT binary_expression '''
+        if len(p) == 2:
+            p[0] = p[1]
+        else:
+            p[0] = Node('Expression',(p[1],p[3]),p[2])
 
     def p_initializer_array(self,p):
         ''' initializer_array : char_string
@@ -152,11 +187,6 @@ class Parser:
             p[0] = p[1]
         elif len(p) == 4:
             p[0] = p[2]
-        #else:
-        #    if not isinstance(p[1],tuple):
-        #        p[0] = p[3],p[6]
-        #    else:
-        #        p[0] = p[3]+(p[6],)             # append to the tuple
 
     def p_block_item(self,p):                   # item inside compound statement
         ''' block_item : declaration
@@ -226,7 +256,23 @@ class Parser:
         p[0] = p[1]
 
     def p_unary_expression(self,p):
-        ''' unary_expression : entry
+        ''' unary_expression : value_expression
+                             | single_expression '''
+        p[0] = p[1]
+
+    def p_single_expression_pre(self,p):
+        ''' single_expression : INCREMENT value_expression
+                              | DECREMENT value_expression
+                              | COMPLEMENT value_expression '''
+        p[0] = Node("Expression",p[2],p[1])
+
+    def p_single_expression_post(self,p):
+        ''' single_expression : value_expression INCREMENT
+                              | value_expression DECREMENT '''
+        p[0] = Node("Expression",p[1],p[2])
+
+    def p_value_expression(self,p):
+        ''' value_expression : entry
                              | const '''
         p[0] = p[1]
 
@@ -274,6 +320,10 @@ class Parser:
         ''' const : DEC_NUM '''
         p[0] = Node("INT",None,p[1])
 
+    def p_const_hex(self,p):
+        ''' const : HEX_NUM '''
+        p[0] = Node("HEX",None,p[1])
+
     def p_const_float(self,p):
         ''' const : FLOAT_NUM '''
         p[0] = Node("FLOAT",None,p[1])
@@ -297,6 +347,18 @@ class Parser:
 
     def p_equals(self,p):
         ''' equals : EQ '''
+        p[0] = p[1]
+
+    def p_assign_operator(self,p):
+        ''' assign_operator : ADD_EQ
+                            | SUB_EQ
+                            | MULT_EQ
+                            | DIV_EQ
+                            | MOD_EQ
+                            | LSHIFT_EQ
+                            | RSHIFT_EQ
+                            | OR_EQ
+                            | XOR_EQ'''
         p[0] = p[1]
 
     def p_empty(self,p):
@@ -381,16 +443,12 @@ class Parser:
                         values_array.append(val_dim.leaf)
                     for i in range(0,int(array_dims[0])):
                         string_param += "%s(%d) = %s\n" % (variable_name,i,int(values_array[i]))
-
-                
-                              
+                        
             elif variable.type == 'Assign':
                 string_param = "Dim %s" % variable.children.leaf
                 string_param += " As %s%s\n" % (variable_type_first,variable_type_rest) 
                 string_param += self.generate_assignment(variable,isInside)        
             else:
-                print("-------")
-                print(variable)
                 variable_name = variable.leaf
                 string_param += "Dim %s" % variable_name
                 string_param += " As %s%s\n" % (variable_type_first,variable_type_rest) 
@@ -428,12 +486,37 @@ class Parser:
         return string_param
 
     def generate_assignment(self,var,isInside):
-        variable_name = var.children.leaf
-        assign_value = var.leaf.leaf
         string_param = ""
-        if isInside == 1:
-            string_param += "\t"
-        string_param += "%s = %s\n" % (variable_name,assign_value)
+        variable_name = var.children.leaf
+
+        if var.type == 'Assign':
+            assign_value = var.leaf.leaf
+            if isInside == 1:
+                string_param += "\t"
+            if var.leaf.children == []:
+                string_param += "%s = %s\n" % (variable_name,assign_value)
+            else:                                   # expression
+                if isinstance(var.leaf.children,tuple):      # binary expression
+                    var_1 = var.leaf.children[0].leaf
+                    var_2 = var.leaf.children[1].leaf
+                    binary_opp = var.leaf.leaf
+                    string_param += "%s = %s %s %s\n" % (variable_name,var_1,binary_opp,var_2)
+                else:                               # single expression
+                    assign_var = var.children.leaf
+                    operator = var.leaf.leaf
+                    if operator == '++':
+                        string_param += "%s = %s + 1\n" % (variable_name,assign_var)
+                    if operator == '--':
+                        string_param += "%s = %s - 1\n" % (variable_name,assign_var)
+                    if operator == '~':
+                        string_param += "# %s - NOT SUPPORTED BY WWB" % (operator)
+
+        if var.type == 'Assign_OP':
+            operator = (var.leaf[1].split('='))[0]
+            assign_value = var.leaf[0].leaf
+            if isInside == 1:
+                string_param += "\t"
+            string_param += "%s = %s %s %s\n" % (variable_name,variable_name,operator,assign_value)
 
         return string_param
 
@@ -464,7 +547,7 @@ class Parser:
                         self.generate_code(statement)
                 self.string += "End Sub\n"
             else:
-                string_param += "Function %s%s() as %s%s\n" % (function_UD_name_first,function_UD_name_rest,function_UD_type_first,function_UD_type_rest)
+                self.string += "Function %s%s() as %s%s\n" % (function_UD_name_first,function_UD_name_rest,function_UD_type_first,function_UD_type_rest)
                 statements = function_param.children  
                 self.inside = 1
                 if not isinstance(statements,tuple):
@@ -472,7 +555,7 @@ class Parser:
                 else:
                     for statement in statements:
                         self.generate_code(statement)
-                string_param += "End Function\n"
+                self.string += "End Function\n"
 
         if function_param.type == 'CAPL_fcn':
                
@@ -513,7 +596,7 @@ class Parser:
                         self.string += self.generate_declaration(declaration,self.inside)
                 self.string += "\n"
 
-            if root.type == 'Assign':
+            if root.type == 'Assign' or root.type == 'Assign_OP':
                 self.string += self.generate_assignment(root,self.inside)
 
             if root.type == 'Function_UD':             # translation of user-defined functions
