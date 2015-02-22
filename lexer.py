@@ -21,7 +21,7 @@ class Lexer:
     #    ('state','exclusive'),
     #    )
 
-    reserved = {            # reserved keywords
+    reserved_words = {            # reserved keywords
         'char' : 'CHAR',
         'byte' : 'BYTE',
         'int' : 'INT',
@@ -34,9 +34,19 @@ class Lexer:
         'timer' : 'TIMER',
         'msTimer' : 'MSTIMER',
         'void' : 'VOID',
+        'if' : 'IF',
+        'else' : 'ELSE',
+        'switch': 'SWITCH',
+        'while' : 'WHILE',
+        'do' : 'DO',
+        'for' : 'FOR',
+        'break' : 'BREAK',
+        'continue' : 'CONTINUE',
+        'return' : 'RETURN',
+        'this' : 'THIS',
         }
 
-    numbers = {
+    reserved_numbers = {
         'dec_num' : 'DEC_NUM',
         'float_num' : 'FLOAT_NUM',
         'hex_num' : 'HEX_NUM',
@@ -89,8 +99,9 @@ class Lexer:
 
         # misc operatprs
         'DOT',
-        'CONDITION_EVAL',
-
+        'COND_QUAT',    # quatation mark
+        'COL',          # colon
+            
         'WS',
         'COM',      # comma
         'SMC',      # semicolon
@@ -110,11 +121,11 @@ class Lexer:
         'CAPLBEGIN',    # CAPL begin sectin, e.g. /*@@var: */
         'CAPLEND',      # CAPL end, i.e. /*@@end */
         'ARRAY',        # single or multi-dimensional array
-        'DATATYPE',     # int, float, ...
+        'RESERVED',     # int, float, ...
         'CAPLEVENT',    # CAPL event 
         'CAPLEVENT_word',  # reserved keywords for CAPL event
         'VARS',         # keyword 'variables'
-        ] + list(reserved.values()) + list(numbers.values())
+        ] + list(reserved_words.values()) + list(reserved_numbers.values())
 
     t_WS = r'[ \t\n]'
 
@@ -169,7 +180,8 @@ class Lexer:
 
     # misc operators
     t_DOT = r'\.'
-    t_CONDITION_EVAL = r'\?\:'
+    t_COND_QUAT = r'\?'
+    t_COL = r'\:'
 
     t_COM = r'\,'
     t_SMC = r'\;'
@@ -216,8 +228,8 @@ class Lexer:
         return t
 
     @TOKEN(t_ID)
-    def t_DATATYPE(self,t):                 # get data type of a variable
-        t.type = self.reserved.get(t.value, 'ID')
+    def t_RESERVED(self,t):                 # get reserved word
+        t.type = self.reserved_words.get(t.value, 'ID')
         return t
 
     @TOKEN(capl_begin)

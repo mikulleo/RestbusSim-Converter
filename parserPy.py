@@ -44,6 +44,7 @@ class Parser:
         ('left','GT','GTE','LT','LTE'),
         ('left','BIT_AND','BIT_OR','BIT_XOR'),
         ('left','LSHIFT','RSHIFT'),
+        ('left','AND','OR'),
     )
 
     def p_program(self,p):                          # lines of code
@@ -95,7 +96,12 @@ class Parser:
 
     def p_statement(self,p):
         ''' statement : capl_function
-                      | compound_statement '''
+                      | compound_statement
+                      | if_statement 
+                      | while_statement
+                      | do_while_statement
+                      | for_statement 
+                      | jump_statement'''
         p[0] = p[1]
 
     def p_parameter_list(self,p):
@@ -174,8 +180,29 @@ class Parser:
         p[0] = p[1]
 
     def p_expression(self,p):
-        ''' expression : binary_expression '''
+        ''' expression : logical_expression
+                       | conditional_expression '''
         p[0] = p[1]
+
+    def p_logical_expression(self,p):
+        ''' logical_expression : binary_expression
+                               | logical_expression AND logical_expression
+                               | logical_expression OR logical_expression 
+                               | LPAR logical_expression RPAR AND LPAR logical_expression RPAR
+                               | LPAR logical_expression RPAR OR LPAR logical_expression RPAR'''
+        if len(p) == 2:
+            p[0] = p[1]
+        else:
+            p[0] = Node("Logic_EXPR",(p[1],p[3]),p[2])
+
+    
+    def p_conditional_expression(self,p):
+       ''' conditional_expression : binary_expression
+                                  | LPAR binary_expression RPAR COND_QUAT expression COL conditional_expression '''
+       if len(p) == 2:
+           p[0] = p[1]
+       else:
+           p[0] = Node("Cond_EXPR",(p[5],p[7]),p[2])
 
     def p_binary_expression(self,p):
         ''' binary_expression : unary_expression
@@ -272,6 +299,42 @@ class Parser:
             pass
         else:
             p[0] = p[2]
+
+    def p_if_statement(self,p):
+        ''' if_statement : IF LPAR expression RPAR compound_statement
+                         | IF LPAR expression RPAR compound_statement ELSE compound_statement'''
+        if len(p) == 6:
+            p[0] = Node("IF",p[5],p[3])
+        else:
+            p[0] = Node("IF-ELSE",(p[5],p[7]),p[3])
+
+    def p_while_statement(self,p):
+        ''' while_statement : WHILE LPAR expression RPAR compound_statement'''
+        p[0] = Node("WHILE",p[5],p[3])
+
+    def p_do_while_statement(self,p):
+        ''' do_while_statement : DO compound_statement WHILE LPAR expression RPAR SMC'''
+        p[0] = Node("DO-WHILE",p[2],p[5])
+
+    def p_for_statement(self,p):
+        ''' for_statement : FOR LPAR declaration expression SMC expression RPAR compound_statement
+                          | FOR LPAR expression SMC expression SMC expression RPAR compound_statement'''
+        if len(p) == 9:
+            p[0] = Node("FOR",p[8],(p[3],p[4],p[6]))
+        else:
+            p[0] = Node("FOR",p[8],(p[3],p[5],p[7]))
+
+    def p_jump_statement_break(self,p):
+        ''' jump_statement : BREAK SMC'''
+        p[0] = Node("BREAK",None,None)
+
+    def p_jump_statement_continue(self,p):
+        ''' jump_statement : CONTINUE SMC'''
+        p[0] = Node("CONTINUE",None,None)
+
+    def p_jump_statement_return(self,p):
+        ''' jump_statement : RETURN expression SMC'''
+        p[0] = Node("RETURN",None,p[2])
 
     def p_capl_function(self,p):                    # e.g. ILSetSignal( Ctrl_C_Stat1_AR::ReturnKey_Psd_UB, 1);
         ''' capl_function : capl_function_body SMC '''
@@ -380,6 +443,7 @@ class Parser:
                             | LSHIFT_EQ
                             | RSHIFT_EQ
                             | OR_EQ
+                            | AND_EQ
                             | XOR_EQ'''
         p[0] = p[1]
 
@@ -691,12 +755,101 @@ class Parser:
             if root.type == 'Assign' or root.type == 'Assign_OP':
                 self.string += self.generate_assignment(root,self.inside)
 
+            if root.type == 'Expression':
+                self.string += "%s %s %s" % (root.children[0].leaf,root.leaf,root.children[1].leaf)
+
             if root.type == 'Function_UD':             # translation of user-defined functions
                 #self.string += self.generate_function(root,self.inside)
                 self.generate_function(root,self.inside)
 
             if root.type == 'CAPL_fcn':             # translation of CAPL defined functions
                 self.string += self.generate_function(root,self.inside)
+
+            if root.type == 'IF':                    # if statement
+                self.string += '\tIf '
+                self.generate_code(root.leaf)
+                self.string += ' Then\n'
+                if not isinstance(root.children,tuple):
+                    self.string += '\t'
+                    self.generate_code(root.children)
+                else:
+                    for root_children in root.children:
+                        self.string += '\t'
+                        self.generate_code(root_children)
+                self.string += '\tEnd If\n'
+
+            if root.type == 'IF-ELSE':
+                self.string += '\tIf '
+                self.generate_code(root.leaf)
+                self.string += ' Then\n'
+                if not isinstance(root.children[0],tuple):
+                    self.string += '\t'
+                    self.generate_code(root.children[0])
+                else:
+                    for root_children in root.children[0]:
+                        self.string += '\t'
+                        self.generate_code(root_children)
+                self.string += '\tElse\n'
+                if not isinstance(root.children[1],tuple):
+                    self.string += '\t'
+                    self.generate_code(root.children[1])
+                else:
+                    for root_children in root.children[1]:
+                        self.string += '\t'
+                        self.generate_code(root_children)
+                self.string += '\tEnd If\n'
+
+            if root.type == 'WHILE':
+                self.string += '\tWhile '
+                self.generate_code(root.leaf)
+                self.string += '\n'
+                if not isinstance(root.children,tuple):
+                    self.string += '\t'
+                    self.generate_code(root.children)
+                else:
+                    for root_children in root.children:
+                        self.string += '\t'
+                        self.generate_code(root_children)
+                self.string += '\tWend\n'
+
+            if root.type == 'DO-WHILE':
+                self.string += '\tDo\n'
+                if not isinstance(root.children,tuple):
+                    self.string += '\t'
+                    self.generate_code(root.children)
+                else:
+                    for root_children in root.children:
+                        self.string += '\t'
+                        self.generate_code(root_children)
+                var_1 = root.leaf.children[0].leaf
+                var_2 = root.leaf.children[1].leaf
+                operator = root.leaf.leaf
+                self.string += '\tLoop Until %s %s %s\n' % (var_1,operator,var_2)
+
+            if root.type == 'FOR':
+                self.string += '\tFor '
+                iter_var = root.leaf                # manipulating with iteration variable
+                iter_var_name = iter_var[0].children.leaf      # in WWB we don't care about iter_var type, just the name
+                final_iter_num = int(iter_var[1].children[1].leaf) - 1     # to what number we iterate
+                if iter_var[2].leaf == '++':
+                    step_size = 1                   # iteration step size
+                self.string += "%s = 0 To %s Step %s\n" % (iter_var_name,final_iter_num,step_size)
+                if not isinstance(root.children,tuple):
+                    self.string += '\t'
+                    self.generate_code(root.children)
+                else:
+                    for root_children in root.children:
+                        self.string += '\t'
+                        self.generate_code(root_children)
+                self.string += "\tNext %s\n" % iter_var_name
+
+            if root.type == 'SWITCH':
+                self.string += 'Switch NOT implemented yet\n'
+
+            if root.type == 'RETURN':
+                self.string += '\tReturn '
+                if isinstance(root.leaf,Node):
+                    self.string += '%s\n' % root.leaf.leaf
 
             if root.type == 'Declaration':          # translation of declarations
                 self.string += self.generate_declaration(root,self.inside)
