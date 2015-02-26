@@ -37,12 +37,14 @@ class Lexer:
         'if' : 'IF',
         'else' : 'ELSE',
         'switch': 'SWITCH',
+        'case' : 'CASE',
         'while' : 'WHILE',
         'do' : 'DO',
         'for' : 'FOR',
         'break' : 'BREAK',
         'continue' : 'CONTINUE',
         'return' : 'RETURN',
+        'default' : 'DEFAULT',
         'this' : 'THIS',
         }
 
@@ -114,11 +116,13 @@ class Lexer:
         'NUM',      # number
         'STRING',
         'CHARC',    # single character
+        'KEY',      # single key, used during on key event, e.g. 'a'
         'ID',       # identifier
         'DCOL',     # double colon
         'COMMENT',      # normal comment
         'CppCOMMENT',   # C++ style comment
-        'CAPLBEGIN',    # CAPL begin sectin, e.g. /*@@var: */
+        'CAPLBEGIN',    # CAPL begin section, e.g. /*@@var: */
+        'CAPLFUNCBEGIN', # CAPL function begin, e.g. /*@@caplFunc:function(int x) */
         'CAPLEND',      # CAPL end, i.e. /*@@end */
         'ARRAY',        # single or multi-dimensional array
         'RESERVED',     # int, float, ...
@@ -194,6 +198,7 @@ class Lexer:
     t_NUM = r'[0-9]+'
     t_STRING = r'\"(\\.|[^\\"])(\\.|[^\\"])+\"'
     t_CHARC = r'\"(.)\"'
+    t_KEY = r'\'(.)\''
     t_ID = r'[a-zA-Z_][a-zA-Z0-9_-]*'
     t_DCOL = r'\:\:'
     t_COMMENT = r'/\*([^\*]|\*[^*/])*\*/'     # manual - sec. 8.4. - comments
@@ -205,11 +210,17 @@ class Lexer:
     float_const = r'(' + t_NUM + r')\.(' + t_NUM + r')'
     hex_const = r'(0x)(' + t_NUM + r'|' + r'[A-Z]+)'
 
+    array_decl = r'((' + t_LBRK + r')[a-zA-Z0-9]*(' + t_RBRK + r'))+'
+
     on_event_declar = r'(on' + t_WS + r')+(' + t_CAPLEVENT_word + r')+'
-    capl_begin = r'\/\*\@\@(' + t_ID + r')*(\:)' + r'(' + t_WS + r')*(' + t_ID + r')?(\:)?(' + t_WS + r')*\*\/'
+    capl_begin = r'\/\*\@\@(' + t_ID + r')*(\:)' + r'(' + t_WS + r')*(' + t_ID + r'|' + t_KEY+ r')?(\:)?(' + t_WS + r')*\*\/'
+    capl_func_begin = r'\/\*\@\@caplFunc\:(' + t_ID + r')+\((' + t_ID + r'|' + t_COM + r'|' + array_decl +  r'|' + t_WS + r')*\)\:(' + t_WS + r')*\*\/'
+
+    #capl_func_begin = r'\/\*\@\@caplFunc\:(' + t_ID + r')+\((' + t_ID + r')*\)(' + t_WS + r')*\*\/'
     capl_end = r'\/\*\@\@end(' + t_WS + r')*\*\/'
 
-    array_decl = r'(' + t_LBRK + r')[0-9]*(' + t_RBRK + r')((' + t_LBRK + r')[0-9]*(' + t_RBRK + r'))*'
+    
+    #array_decl = r'(' + t_LBRK + r')[0-9]*(' + t_RBRK + r')((' + t_LBRK + r')[0-9]*(' + t_RBRK + r'))*'
     
     @TOKEN(hex_const)
     def t_HEX_NUM(self,t):
@@ -232,18 +243,21 @@ class Lexer:
         t.type = self.reserved_words.get(t.value, 'ID')
         return t
 
-    @TOKEN(capl_begin)
-    def t_CAPLBEGIN(self,t):
-        return t   
-    
-    @TOKEN(capl_end)
-    def t_CAPLEND(self,t):
-        return t 
-
     @TOKEN(array_decl)
     def t_ARRAY(self,t):
         return t
+
+    @TOKEN(capl_begin)
+    def t_CAPLBEGIN(self,t):
+        return t   
+
+    @TOKEN(capl_func_begin)
+    def t_CAPLFUNCBEGIN(self,t):
+        return t
     
+    @TOKEN(capl_end)
+    def t_CAPLEND(self,t):
+        return t    
 
     def getTokens(self):
         return self.tokens;

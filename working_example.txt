@@ -1,7 +1,104 @@
-/*@@var:  */
-variables {
-	int x = 5;
-	float y[4][2];
+/*@@var:*/
+variables
+{
+	char letter_a = "a";
+	int number_days_in_year = 365;
+	message wake-up xxx;
+	timer one_second;
+	int j, k = 2;
+	double x = 33.7;
+	char p;
+	int M[4][5] = {
+			{10,5,3,17,82},
+			{9,0,0,8,7},
+			{32,20,1,0,14},
+			{0,0,8,7,6}
+			};
+}
+/*@@end */
+
+/*@@caplFunc:myFunc(): */
+void myFunc()
+{
+	byte value = 10;
+	write("value = %d",value);
+	x = 0;
+	x += 1;
+	int sample_data[4] = {100,300,500,600};
+	M[i][j] = 10;
+
+	x = y + z;
+	x = y++;
+	x = z % y;
+
+	x = y & z;
+	x = y >> 1;
+	x = ~y;
+
+	if(!y) {
+		y = x;
+	}
+
+	if(y == 0 && z == 1)
+	{
+		x = 1;
+	}
+
+	switch(x)
+	{
+		case 10: result = a + b;
+			  break;
+		default:  result = a - b;
+			  break;
+	}
+}
+/*@@end */
+
+/*@@caplFunc:nextFunc(float speed, float clock, int num): */
+int nextFunc(float speed, float clock, int num)
+{
+	function_script(a,10,"helloWorld");
+	var = function_script(a,10,"helloWorld");
+	long var2 = function_script(a,10,"helloWorld");
+
+	if (speed >= cruising_speed) {
+		cruising_speed = speed;
+	}
+
+	while(num != 0) {
+		num = num / 10;
+		if (clock <= 60) {
+			clock += 1;
+		}
+		else {
+			clock = 0;
+		}
+	}
+
+	do
+	{
+		num = num / 10;
+	}
+	while(num != 0);
+	for(int i; i < 10; i++) {
+		x = x + 1;
+	}				// working only partly!
+
+	return num;
+
+	
+}
+/*@@end */
+
+/*@@startStart: */
+on Start
+{
+	if (this.CAN == 1)
+	{
+		val = this.byte(0);
+	}
+	val = getValue(this);
+	int x = this.byte(0);
 }
 /*@@end */
 
@@ -12,31 +109,4 @@ on envVar initialize
     ILSetSignal( Ctrl_C_Stat1_AR::ReturnKey_Psd_UB, 1);
 }
 /*@@end*/
-
-int myFunc(double x, int y, abc)
-{
-	byte value;
-	x += 0xFF;
-	y = x++;
-	abc = a * b;
-
-	if (a < b) {
-		x = 1;
-	}
-	else {
-		x = 2;
-	}
-	for(int i; i < 10; i++) {
-		x = x + 1;
-	}
-	while(y < 10) {
-		y = y + 1; 
-	}
-	do {
-		z = z + 1;
-	}
-	while(z < 10);
-
-	return x;
-}
 
