@@ -3,29 +3,63 @@ variables
 {
 	char letter_a = "a";
 	int number_days_in_year = 365;
-	message wake-up xxx;
+	/* mention that number must be here as Id and channel must be defined! */
+	message 101 xxx;
 	timer one_second;
 	int j, k = 2;
 	double x = 33.7;
 	char p;
-	int M[4][5] = {
-			{10,5,3,17,82},
-			{9,0,0,8,7},
-			{32,20,1,0,14},
-			{0,0,8,7,6}
-			};
+
+	/* this is comment. */
+	// and this is comment
+
 }
 /*@@end */
+
+/*@@caplFunc:myDeclar(): */
+void myDeclar()
+{
+	int x,y,z;
+	byte value = 10;
+
+	// CAPL ---> ProveTech function
+	write("value = %d",value);		
+	x = 0;
+	y = 1;
+	z = 2;
+
+	int sample_data[4] = {100,300,500,600};
+	char alphabet[27] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	int M[4][5] = {
+			{10,5,-3,17,82},
+			{9,0,0,8,-7},
+			{32,20,1,0,14},
+			{0,0,8,7,6}
+		};
+	int value2 = 0x14;
+	char character = 'B';
+	char buffer[30] = "Here's a string in C and CAPL";
+
+	strncpy(buffer,msg_name.node_name,elcount(buffer)-1);
+}
+/*@@end */
+
+
 
 /*@@caplFunc:myFunc(): */
 void myFunc()
 {
+	int x,y,z;
 	byte value = 10;
 	write("value = %d",value);
 	x = 0;
+	y = 10;
+	z = 100;
 	x += 1;
 	int sample_data[4] = {100,300,500,600};
-	M[i][j] = 10;
+	char alphabet[27][2] = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ","ABCDEFGHIJKLMNOPQRSTUVWXYZ"};
+	double M[2][2];
+	M[x][x] = -3.14;
 
 	x = y + z;
 	x = y++;
@@ -39,34 +73,36 @@ void myFunc()
 		y = x;
 	}
 
-	if(y == 0 && z == 1)
+	if(y == 10 && z < 100)
 	{
 		x = 1;
 	}
 
-	switch(x)
+	switch(value)
 	{
-		case 10: result = a + b;
+		case 10: value = x + y;
 			  break;
-		default:  result = a - b;
+		default:  result = x - y;
 			  break;
 	}
+
+	strncpy(buffer, msg_name.node_name,elcount(buffer)-1); 
 }
 /*@@end */
 
-/*@@caplFunc:nextFunc(float speed, float clock, int num): */
-int nextFunc(float speed, float clock, int num)
+/*@@caplFunc:speedTest(float speed, float clock): */
+float speedTest(float speed, float clock)
 {
-	function_script(a,10,"helloWorld");
-	var = function_script(a,10,"helloWorld");
-	long var2 = function_script(a,10,"helloWorld");
+	
+	float cruising_speed = 70;
 
 	if (speed >= cruising_speed) {
-		cruising_speed = speed;
+		speed = cruising_speed;
 	}
+	write(speed);
 
-	while(num != 0) {
-		num = num / 10;
+	while(speed != 0) {
+		speed = speed - 1;
 		if (clock <= 60) {
 			clock += 1;
 		}
@@ -74,30 +110,37 @@ int nextFunc(float speed, float clock, int num)
 			clock = 0;
 		}
 	}
+	write(clock);	
+
+	speed = 10;
 
 	do
 	{
-		num = num / 10;
+		speed = speed - 1;
 	}
-	while(num != 0);
-	for(int i; i < 10; i++) {
-		x = x + 1;
-	}				// working only partly!
-
-	return num;
-
+	while(speed != 0);
+	write(speed);
 	
+	for(int i; i < 10; i++) {
+		speed = speed++;
+	}
+
+	return speed;
 }
 /*@@end */
 
 /*@@startStart: */
-on Start
+on start
 {
 	if (this.CAN == 1)
 	{
 		val = this.byte(0);
 	}
 	val = getValue(this);
+	if (getvalue(this) == 1) {
+	
+		setTimer(one_tenth,10);
+	}
 	int x = this.byte(0);
 }
 /*@@end */
@@ -107,6 +150,38 @@ on Start
 on envVar initialize
 {
     ILSetSignal( Ctrl_C_Stat1_AR::ReturnKey_Psd_UB, 1);
+    x = getSignal(Ctrl_C_Stat1_AR::ReturnKey_Psd_UB);
+    num = getFirstCANdbName(buffer,elcount(buffer));
+    output(msg);
 }
 /*@@end*/
+
+/*@@caplFunc:function(): */
+void function()
+{
+	int x;
+	int var;
+	message 0x00 dalsi;
+	x = dalsi.sig;
+}
+/*@@end */
+
+/*@@startStart: */
+on start
+{
+	readHandle = openFileRead("random.asc",0);
+
+	if( readHandle != 0 && fileGetString(timeBuffer,elcount(timeBuffer),readHandle) != 0)
+	{
+		setTimer(cyclicTimer,100);
+	}
+	else 
+	{
+		write("Data file cannot be opened for read access.");
+	}
+
+	signalBuffer[0] = timeBuffer[i];
+
+}
+/*@@end */
 

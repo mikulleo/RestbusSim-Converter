@@ -203,12 +203,12 @@ class Lexer:
     t_DCOL = r'\:\:'
     t_COMMENT = r'/\*([^\*]|\*[^*/])*\*/'     # manual - sec. 8.4. - comments
     t_CppCOMMENT = r'//.*'
-    t_CAPLEVENT_word =r'PreStart|Start|stopMeasurement|busOff|timer|key|message|errorActive|errorPassive|warningLimit|errorFrame|envVar|preStop'
+    t_CAPLEVENT_word =r'preStart|start|stopMeasurement|busOff|timer|key|message|errorActive|errorPassive|warningLimit|errorFrame|envVar|preStop'
     #t_DATATYPE = r'(char|byte|int|word|dword|long|float|double|message|timer|msTimer)'
     #t_VAR = r'(' + t_DATATYPE + r')+(' + t_WS + r')*(' + t_ID + r')*(' + t_WS + r')*\;'
 
     float_const = r'(' + t_NUM + r')\.(' + t_NUM + r')'
-    hex_const = r'(0x)(' + t_NUM + r'|' + r'[A-Z]+)'
+    hex_const = r'(0[xX][0-9a-fA-F]+)'
 
     array_decl = r'((' + t_LBRK + r')[a-zA-Z0-9]*(' + t_RBRK + r'))+'
 

@@ -17,6 +17,7 @@ from lxml import etree
 import os.path
 import io
 from panelsWindow import PanelsWindow
+from parserPy import Parser
 
 class App:
     
@@ -71,11 +72,22 @@ class App:
         xmlrbs.insert(0,file)
 
     def layout_scheme(self,master):         # basic layout
-        Label(master, text=u"P:RE config").grid(row=0,column=0)
-        Label(master, text=u"dbc/arxml file").grid(row=1,column=0)
-        Label(master, text=u"xml RBS file").grid(row=2,column=0)
-        Label(master, text=u"Port Name").grid(row=3,column=0)
-        Label(master, text=u"Bit Rate").grid(row=4,column=0)
+
+        pre_label = LabelFrame(master, text=u"P:RE config")
+        pre_label.grid(row=0,column=0)
+        pre_label.config(font="Cambria 14", padx=10,pady=7,bd=4,relief="groove",width=13)
+        dbcArxml_label = LabelFrame(master, text=u"dbc/arxml file")
+        dbcArxml_label.grid(row=1,column=0)
+        dbcArxml_label.config(font="Cambria 14", padx=10,pady=7,bd=4,relief="groove",width=13)
+        xmlRbs_label = LabelFrame(master, text=u"xml RBS file")
+        xmlRbs_label.grid(row=2,column=0)
+        xmlRbs_label.config(font="Cambria 14", padx=10,pady=7,bd=4,relief="groove",width=13)
+        port_label = LabelFrame(master, text=u"Port Name")
+        port_label.grid(row=3,column=0)
+        port_label.config(font="Cambria 14", padx=10,pady=7,bd=4,relief="groove",width=13)
+        bitRate_label = LabelFrame(master, text=u"Bit Rate")
+        bitRate_label.grid(row=4,column=0)
+        bitRate_label.config(font="Cambria 14", padx=10,pady=7,bd=4,relief="groove",width=13)
 
         pre_path = StringVar()
         pre_path.set("E:\Documents\CVUT Praha\Ing\Diplomova prace\PROVEtech\generatedTest.xml")
@@ -87,36 +99,50 @@ class App:
         port_name_init.set("HU_CAN")
 
 
-        e_pre = Entry(master,textvariable = pre_path,width = 125)
+        e_pre = Entry(pre_label,textvariable = pre_path)
         e_pre.grid(row=0,column=1)
-        e_dbcArxml = Entry(master,textvariable = dbcArxml_path,width = 125)
+        e_pre.config(font="Cambria 12",bd=2,relief="groove",width=75)
+        e_dbcArxml = Entry(dbcArxml_label,textvariable = dbcArxml_path)
         e_dbcArxml.grid(row=1,column=1)
-        e_xmlRbs = Entry(master,textvariable = xmlRbs_path,width = 125)
+        e_dbcArxml.config(font="Cambria 12",bd=2,relief="groove",width=75)
+        e_xmlRbs = Entry(xmlRbs_label,textvariable = xmlRbs_path)
         e_xmlRbs.grid(row=2,column=1)
-        e_port = Entry(master,textvariable = port_name_init)          # grid must be introduced later; otherwise NoneType error
+        e_xmlRbs.config(font="Cambria 12",bd=2,relief="groove",width=75)
+        e_port = Entry(port_label,textvariable = port_name_init)          # grid must be introduced later; otherwise NoneType error
         e_port.grid(row=3,column=1)
-        e_bitRate = Entry(master)
+        e_port.config(font="Cambria 12",bd=2,relief="groove",width=75)
+        e_bitRate = Entry(bitRate_label)
         e_bitRate.grid(row=4,column=1)
+        e_bitRate.config(font="Cambria 12",bd=2,relief="groove",width=75)
         
         select_preconf_btn = Button(master, text=u"SELECT", command = lambda: self.select_pre_callback(e_pre))
-        #select_preconf_btn.config(width = 16, height = 3, font = ("Helvetica", "10", "bold"))
-        select_preconf_btn.grid(row=0,column=2)
+        select_preconf_btn.config(width=10,padx=10,pady=10,bd=2,font="Cambria 12")
+        select_preconf_btn.grid(row=0,column=1)
         select_dbc_btn = Button(master, text=u"SELECT", command = lambda: self.select_dbc_callback(e_dbcArxml))
-        #select_dbc_btn.config(width = 16, height = 3, font = ("Helvetica", "10", "bold"))
-        select_dbc_btn.grid(row=1,column=2)
+        select_dbc_btn.config(width=10,padx=10,pady=10,bd=3,font="Cambria 12")
+        select_dbc_btn.grid(row=1,column=1)
         select_xmlrbs_btn = Button(master, text=u"SELECT", command = lambda: self.select_xmlRbs_callback(e_xmlRbs))
-        #select_xmlrbs_btn.config(width = 16, height = 3, font = ("Helvetica", "10", "bold"))
-        select_xmlrbs_btn.grid(row=2,column=2)
-        next_btn = Button(master, text=u"NEXT", command = lambda: self.next_btn_callback(e_pre,e_port,e_bitRate,e_dbcArxml,e_xmlRbs))
-        #next_btn.config(width = 16, height = 3, font = ("Helvetica", "10", "bold"))
-        next_btn.grid(row=5,column=2)
-        panels_conv_btn = Button(master, text=u"PANELS", command = lambda: PanelsWindow(master))
-        panels_conv_btn.grid(row=6,column=2)
+        select_xmlrbs_btn.config(width=10,padx=10,pady=10,bd=3,font="Cambria 12")
+        select_xmlrbs_btn.grid(row=2,column=1)
+        next_btn = Button(master, text=u"GENERATE XML", command = lambda: self.next_btn_callback(e_pre,e_port,e_bitRate,e_dbcArxml,e_xmlRbs))
+        next_btn.grid(row=4,column=1)
+        next_btn.config(width=10,padx=10,pady=5,bd=3,font="Cambria 14",wraplength=100)
+
+
+    def layout_scheme_bottom(self,master):
+        
+        panels_conv_btn = Button(master, text=u"GUI & CODE CONVERSION", command = lambda: PanelsWindow(master))
+        panels_conv_btn.grid(row=5,column=1)
+        panels_conv_btn.config(width=50,padx=20,pady=5,bd=3,font="Cambria 12")
 
     def __init__(self,master):
-        frame = Frame(master)
+        frame_top = Frame(master)
+        frame_top.grid(row = 0, column = 0, rowspan = 5, columnspan = 2, sticky = W+E+N+S,padx=5,pady=(5,1)) 
+        frame_bottom = Frame(master)
+        frame_bottom.grid(row = 5, column = 0, rowspan = 1, columnspan = 2, sticky = W+E+N+S,padx=(70,50),pady=(0,2))
+        self.layout_scheme(frame_top)
+        self.layout_scheme_bottom(frame_bottom)
         #frame.pack()
-        self.layout_scheme(master)
 
         self.file_opt = options = {}
         options['defaultextension'] = '.xml'
@@ -126,7 +152,12 @@ class App:
         options['title'] = 'Select file'
     
 if __name__ == '__main__':
-    root = tk.Tk()
-    app = App(root)
-    
-    root.mainloop()
+    #root = tk.Tk()
+
+    #app = App(root)
+
+  
+
+    parser_init = Parser("E:\Documents\CVUT Praha\Ing\Diplomova prace\code\compiler\compiler\ex.txt")
+        
+    #root.mainloop()
