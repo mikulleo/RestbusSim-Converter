@@ -1,14 +1,29 @@
 # -*- coding: iso-8859-1 -*-
 
-# main for GUI
 #
-# Author: Leos Mikulka (mikulkal@hotmail.com)
-# Date:
+# Copyright 2015 Leos Mikulka
+#
+# This file is part of RestbusSim-Converter.
+
+# RestbusSim-Converter is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# RestbusSim-Converter is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with RestbusSim-Converter.  If not, see <http://www.gnu.org/licenses/>.
 
 __author__ = "Leos Mikulka"
+__copyright__ = "Copyright 2015, Leos Mikulka"
 __license__ = "GPL"
 __version__ = "1.0"
 __email__ = "mikulkal@hotmail.com"
+
 
 import tkinter as tk
 from tkinter import *
