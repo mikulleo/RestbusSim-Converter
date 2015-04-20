@@ -24,6 +24,7 @@ __license__ = "GPL"
 __version__ = "1.0"
 __email__ = "mikulkal@hotmail.com"
 
+
 import tkinter as tk
 from tkinter import *
 from tkinter import filedialog
@@ -243,9 +244,9 @@ class PanelsWindow:
 
     def layout_scheme_top(self,master):
         xvp_path = StringVar()
-        xvp_path.set("E:\Documents\CVUT Praha\Ing\Diplomova prace\CANoe_milan\Panels\Panel1.xvp")
+        xvp_path.set("C:\Panel1.xvp")
         capl_path = StringVar()
-        capl_path.set("E:\Documents\CVUT Praha\Ing\Diplomova prace\code\compiler\compiler\ex.txt")
+        capl_path.set("C:\example_code.mac")
 
         xvp_label = LabelFrame(master, text=u"xvp file -- GUI")
         xvp_label.grid(row=0,column=0)
@@ -273,12 +274,12 @@ class PanelsWindow:
         return (e_xvp,e_capl)
 
     def layout_scheme_bottom(self,master,xvp,capl):
-        convert_capl_btn = Button(master, text=u"CONVERT CAPL", command = lambda: self.convert_capl_callback(capl))
+        convert_capl_btn = Button(master, text=u"CONVERT CAPL -> WWB", command = lambda: self.convert_capl_callback(capl))
         convert_capl_btn.grid(row=2,column = 3)
         convert_capl_btn.config(width=25,padx=10,pady=10,bd=2,font="Cambria 14")
         empty_label = Label(master,width=5)
         empty_label.grid(row=2,column = 2)
-        convert_xvp_btn = Button(master, text=u"CONVERT XVP", command = lambda: self.convert_xvp_callback(xvp))
+        convert_xvp_btn = Button(master, text=u"CONVERT XVP -> AOF", command = lambda: self.convert_xvp_callback(xvp))
         convert_xvp_btn.config(width=25,padx=10,pady=10,bd=2,font="Cambria 14")
         convert_xvp_btn.grid(row=2,column = 1)
 
@@ -289,13 +290,13 @@ class PanelsWindow:
         frame_bottom = Frame(top)
         frame_bottom.grid(row = 3, column = 0, rowspan = 2, columnspan = 2, sticky = W+E+N+S,padx=(70,50),pady=(0,2))
         l = tk.Label(top, text="GUI & Code Conversion")
-        top.title(u"GUI & Code Conversion")
+        top.title(u"RestbusSim Converter - GUI & Code Conversion")
         (e_xvp,e_capl) = self.layout_scheme_top(frame_top)         # put top as a master
         self.layout_scheme_bottom(frame_bottom,e_xvp,e_capl)
 
         self.file_opt = options = {}
         options['defaultextension'] = '.xvp'
-        options['filetypes'] = [('all files', '.*'), ('XVP files', '.xvp'),('AOF files', '.aof')]
+        options['filetypes'] = [('all files', '.*'), ('XVP files', '.xvp'),('AOF files', '.aof'),('CAPL files', '.can')]
         options['initialdir'] = 'C:\\'
         options['parent'] = top
         options['title'] = 'Select file'

@@ -24,7 +24,6 @@ __license__ = "GPL"
 __version__ = "1.0"
 __email__ = "mikulkal@hotmail.com"
 
-
 import tkinter as tk
 from tkinter import *
 from tkinter import filedialog
@@ -88,16 +87,16 @@ class App:
 
     def layout_scheme(self,master):         # basic layout
 
-        pre_label = LabelFrame(master, text=u"P:RE config")
+        pre_label = LabelFrame(master, text=u"P:RE config file -- XML")
         pre_label.grid(row=0,column=0)
         pre_label.config(font="Cambria 14", padx=10,pady=7,bd=4,relief="groove",width=13)
-        dbcArxml_label = LabelFrame(master, text=u"dbc/arxml file")
+        dbcArxml_label = LabelFrame(master, text=u"DBC/ARXML file")
         dbcArxml_label.grid(row=1,column=0)
         dbcArxml_label.config(font="Cambria 14", padx=10,pady=7,bd=4,relief="groove",width=13)
-        xmlRbs_label = LabelFrame(master, text=u"xml RBS file")
+        xmlRbs_label = LabelFrame(master, text=u"RBS file -- XML")
         xmlRbs_label.grid(row=2,column=0)
         xmlRbs_label.config(font="Cambria 14", padx=10,pady=7,bd=4,relief="groove",width=13)
-        port_label = LabelFrame(master, text=u"Port Name")
+        port_label = LabelFrame(master, text=u"Port Name - CAN channel")
         port_label.grid(row=3,column=0)
         port_label.config(font="Cambria 14", padx=10,pady=7,bd=4,relief="groove",width=13)
         bitRate_label = LabelFrame(master, text=u"Bit Rate")
@@ -105,11 +104,11 @@ class App:
         bitRate_label.config(font="Cambria 14", padx=10,pady=7,bd=4,relief="groove",width=13)
 
         pre_path = StringVar()
-        pre_path.set("E:\Documents\CVUT Praha\Ing\Diplomova prace\PROVEtech\generatedTest.xml")
+        pre_path.set("")                # path of XML file where it should be written
         dbcArxml_path = StringVar()
-        dbcArxml_path.set("E:\Documents\CVUT Praha\Ing\Diplomova prace\PROVEtech\HeadUnit_NTG55\HeadUnit_NTG55_2014\Converted_205_217_222_253_HEADUNIT_CAN_2014_29a_dSPACE.dbc")
+        dbcArxml_path.set("")           # path of DBC file
         xmlRbs_path = StringVar()
-        xmlRbs_path.set("E:\Documents\CVUT Praha\Ing\Diplomova prace\PROVEtech\HeadUnit_NTG55\HeadUnit_NTG55_2014\205_217_222_253_HEADUNIT_CAN_2014_29a_dSPACE.xml")
+        xmlRbs_path.set("")             # path of XML file
         port_name_init = StringVar()
         port_name_init.set("HU_CAN")
 
@@ -139,7 +138,7 @@ class App:
         select_xmlrbs_btn = Button(master, text=u"SELECT", command = lambda: self.select_xmlRbs_callback(e_xmlRbs))
         select_xmlrbs_btn.config(width=10,padx=10,pady=10,bd=3,font="Cambria 12")
         select_xmlrbs_btn.grid(row=2,column=1)
-        next_btn = Button(master, text=u"GENERATE XML", command = lambda: self.next_btn_callback(e_pre,e_port,e_bitRate,e_dbcArxml,e_xmlRbs))
+        next_btn = Button(master, text=u"WRITE TO P:RE XML", command = lambda: self.next_btn_callback(e_pre,e_port,e_bitRate,e_dbcArxml,e_xmlRbs))
         next_btn.grid(row=4,column=1)
         next_btn.config(width=10,padx=10,pady=5,bd=3,font="Cambria 14",wraplength=100)
 
@@ -167,12 +166,12 @@ class App:
         options['title'] = 'Select file'
     
 if __name__ == '__main__':
-    #root = tk.Tk()
-
-    #app = App(root)
+    root = tk.Tk()
+    root.title("RestbusSim Converter - P:RE XML generation")
+    app = App(root)
 
   
 
-    parser_init = Parser("E:\Documents\CVUT Praha\Ing\Diplomova prace\code\compiler\compiler\ex.txt")
+    #parser_init = Parser("E:\Documents\CVUT Praha\Ing\Diplomova prace\code\compiler\compiler\ex.txt")
         
-    #root.mainloop()
+    root.mainloop()

@@ -22,7 +22,6 @@ __license__ = "GPL"
 __version__ = "1.0"
 __email__ = "mikulkal@hotmail.com"
 
-
 from lexer import Lexer
 import ply.lex as lex
 import ply.yacc as yacc
@@ -282,7 +281,7 @@ class Parser:
     def p_inside_block_list(self,p):
         ''' inside_block_list : block_item
                               | inside_block_list block_item '''
-        if len(p) == 2:  # or p[2] == [None]:
+        if len(p) == 2:
             p[0] = p[1]
         else:
             if not isinstance(p[1],tuple):
@@ -293,7 +292,7 @@ class Parser:
     def p_inside_block_list_switch(self,p):
         ''' inside_block_list_switch : block_item_switch
                                      | inside_block_list_switch block_item_switch '''
-        if len(p) == 2:  # or p[2] == [None]:
+        if len(p) == 2:
             p[0] = p[1]
         else:
             if not isinstance(p[1],tuple):
@@ -615,7 +614,7 @@ class Parser:
         array_dims = self.get_array_dims(array_brackets)
         if len(array_dims) == 1:
             if self.is_number(array_dims[0]):
-                dim = int(array_dims[0])
+                dim = int(array_dims[0])-1
                 dim = str(dim)
             else:
                 dim = "%s" % array_dims[0]
@@ -623,7 +622,7 @@ class Parser:
         else:
             for i in range(0,len(array_dims)):
                 if self.is_number(array_dims[i]):
-                    dim = int(array_dims[i])
+                    dim = int(array_dims[i])-1
                     dim = str(dim)
                 else:
                     dim = "%s" % array_dims[i]
@@ -1051,8 +1050,10 @@ class Parser:
             if root.type == 'GlobalVars_decl':      # translation of global variables declaration
                 self.string += "Sub Main\n"         # global variables will appear in Sub Main
                 declarations = root.children
-                self.inside = 0
-                if not isinstance(declarations,tuple):
+                if declarations == []:
+                    pass
+                #self.inside = 0
+                elif not isinstance(declarations,tuple):
                     if declarations.type == 'Decl-MSG':
                         self.generate_message_declaration(declarations)
                     elif declarations.type == 'COMMENT':
@@ -1325,6 +1326,7 @@ class Parser:
 
         self.generate_code(ast_tree) 
         self.write_to_file()
+
         #ast_tree = ast.parse(open(caplFile.get()).read())
         #print(ast.dump(ast_tree))
         ##exec(compile(ast_tree, filename="<ast>", mode="exec"))
