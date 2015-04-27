@@ -5,7 +5,7 @@ This application converts a created restbus simulation in Vector CANoe to PROVEt
 
 The application is written in Python.
 
-Edit 4/2014:
+Edit 4/2015:
 Added the feature of the conversion from CAPL to C. The translation of CAPL's on message events is introduced. Events are handled by using SocketCAN and libev.
 
 ## Project files
