@@ -5,8 +5,13 @@ This application converts a created restbus simulation in Vector CANoe to PROVEt
 
 The application is written in Python.
 
+Edit 4/2014:
+Added the feature of the conversion from CAPL to C. The translation of CAPL's on message events is introduced. Events are handled by using SocketCAN and libev.
+
 ## Project files
 <b> Note: </b> the files will be renamed
+
+### Main Application
 
 - ` tkinterApp.py `
 
@@ -22,7 +27,22 @@ The application is written in Python.
   
 - ` parserPy.py `
 
-  CAPL parser with subsequent translation to WinWrap Basic
+  CAPL parser with subsequent translation to WinWrap Basic and/or C
+  
+### Reaction on received messages in C
+
+- `socketCan.h`, `socketCan.c`
+
+  Set up of the connection over CAN bus
+  
+- `reverse_gear/sent_rcv_libev.c`
+
+  Example of shifting the reverse gear by using receiving and sending messages using libev
+  
+- `eventsHandler/msgEvents.c`
+  
+  Code for handling received messages - switch statements is automatically generated during translation from CAPL
+
   
 ## CAPL conversion - usage
 
