@@ -232,8 +232,17 @@ class PanelsWindow:
             else:
                 xvp.insert(END,file+",")
 
-    def convert_capl_callback(self,caplFile):
-        parser_init = Parser(caplFile)
+    def convert_caplWwb_callback(self,caplFile):
+        parser_init = Parser()
+        ast_tree = parser_init.get_ast_tree(caplFile)
+        parser_init.generate_code(ast_tree)
+        parser_init.write_to_file()
+
+    def convert_caplC_callback(self,caplFile):
+        parser_init = Parser()
+        ast_tree = parser_init.get_ast_tree(caplFile)
+        parser_init.generate_code_c(ast_tree)
+        parser_init.write_to_file_c()
 
     def select_capl_callback(self,capl):
         file = tk.filedialog.askopenfilename(**self.file_opt)
@@ -246,7 +255,7 @@ class PanelsWindow:
         xvp_path = StringVar()
         xvp_path.set("C:\Panel1.xvp")
         capl_path = StringVar()
-        capl_path.set("C:\example_code.mac")
+        capl_path.set("E:\Documents\CVUT Praha\Ing\Diplomova prace\code\compiler\compiler\ex.txt")
 
         xvp_label = LabelFrame(master, text=u"xvp file -- GUI")
         xvp_label.grid(row=0,column=0)
@@ -274,13 +283,16 @@ class PanelsWindow:
         return (e_xvp,e_capl)
 
     def layout_scheme_bottom(self,master,xvp,capl):
-        convert_capl_btn = Button(master, text=u"CONVERT CAPL -> WWB", command = lambda: self.convert_capl_callback(capl))
-        convert_capl_btn.grid(row=2,column = 3)
-        convert_capl_btn.config(width=25,padx=10,pady=10,bd=2,font="Cambria 14")
+        convert_caplWwb_btn = Button(master, text=u"CONVERT CAPL -> WWB", command = lambda: self.convert_caplWwb_callback(capl))
+        convert_caplWwb_btn.grid(row=2,column = 3)
+        convert_caplWwb_btn.config(width=20,padx=10,pady=10,bd=2,font="Cambria 13")
+        convert_caplC_btn = Button(master, text=u"CONVERT CAPL -> C", command = lambda: self.convert_caplC_callback(capl))
+        convert_caplC_btn.grid(row=2,column = 4)
+        convert_caplC_btn.config(width=20,padx=10,pady=10,bd=2,font="Cambria 13")
         empty_label = Label(master,width=5)
         empty_label.grid(row=2,column = 2)
         convert_xvp_btn = Button(master, text=u"CONVERT XVP -> AOF", command = lambda: self.convert_xvp_callback(xvp))
-        convert_xvp_btn.config(width=25,padx=10,pady=10,bd=2,font="Cambria 14")
+        convert_xvp_btn.config(width=20,padx=10,pady=10,bd=2,font="Cambria 13")
         convert_xvp_btn.grid(row=2,column = 1)
 
     def __init__(self,master):
@@ -288,7 +300,7 @@ class PanelsWindow:
         frame_top = Frame(top)
         frame_top.grid(row = 0, column = 0, rowspan = 3, columnspan = 2, sticky = W+E+N+S,padx=5,pady=(5,1)) 
         frame_bottom = Frame(top)
-        frame_bottom.grid(row = 3, column = 0, rowspan = 2, columnspan = 2, sticky = W+E+N+S,padx=(70,50),pady=(0,2))
+        frame_bottom.grid(row = 3, column = 0, rowspan = 2, columnspan = 2, sticky = W+E+N+S,padx=(30,50),pady=(0,2))
         l = tk.Label(top, text="GUI & Code Conversion")
         top.title(u"RestbusSim Converter - GUI & Code Conversion")
         (e_xvp,e_capl) = self.layout_scheme_top(frame_top)         # put top as a master

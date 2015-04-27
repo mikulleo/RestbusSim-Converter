@@ -1,11 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <linux/can.h>
-#include <linux/can/raw.h>
+#include "socketCan.h" 
 
 int s;
 struct sockaddr_can addr;
@@ -40,43 +33,44 @@ int open_port(const char *portName)
   return s;
 }
 
-canid_t read_port(int soc)
+int * read_port(int soc)
 {
   struct can_frame frame;
   ssize_t recvbytes;
-  
+    
   recvbytes = read(soc, &frame, sizeof(struct can_frame));
   
   if (recvbytes < 0) 
   {
     perror("Error during reading socket");
-    return 1;
+    exit(1);
   }
 
     if (recvbytes < sizeof(struct can_frame)) 
     {
       fprintf(stderr, "Error: incomplete CAN frame\n");
-      return(1);
+      exit(1);
     }
     
-   return frame.can_id; 
+   //printf("rcv: %#010x\n",frame.data[7]);
+   int *returnData = malloc(8);
+   int i;
+   for (i = 0; i < sizeof(8); i++) {
+		returnData[i] = frame.data[i];
+   }
+   return returnData; 
 }
 
 int send_frame(int soc, const struct can_frame *frame)
 {
   ssize_t sentbytes;  
-    
-  sentbytes = write(soc, &frame, sizeof(struct can_frame));
+  
+  sentbytes = write(soc, frame, sizeof(struct can_frame));
   if (sentbytes < 0)
   {
     perror("Error when sending a frame");
     return(1);
   }
-  
+  printf("sent: %#010x\n",frame->data[6]);
   return sentbytes;  
-}
-
-int main(int argc, char** argv) {
-    open_port("can0");
-
 }

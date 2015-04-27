@@ -28,6 +28,8 @@ import ply.yacc as yacc
 import ast
 import io
 import string
+import mmap
+import os
 
 class Node:
     def __init__(self,type,children=None,leaf=None):
@@ -367,7 +369,6 @@ class Parser:
         if len(p) == 9:
             p[0] = Node("FOR",p[8],(p[3],p[4],p[6]))
         else:
-            print("chuuuuuuuuligan")
             p[0] = Node("FOR",p[8],(p[3],p[5],p[7]))
 
     def p_switch_statement(self,p):
@@ -1284,8 +1285,558 @@ class Parser:
             for entry in root:
                 self.generate_code(entry)
 
+    def generate_declaration_c(self,declaration_param):
+        variable_type = declaration_param.leaf.leaf
+        print(declaration_param.children)
+
+        if not isinstance(declaration_param.children,tuple):    # single declaration
+            variable = declaration_param.children
+            if variable.type == 'Array':
+                variable_name = variable.leaf[0].leaf
+                array_brackets = variable.leaf[1]
+                self.string += "%s %s%s;\n" % (variable_type,variable_name,array_brackets)
+
+            elif variable.type == 'Assign_Array':
+                variable_name = variable.children[0].leaf
+                array_brackets = variable.children[1]
+                if not variable_type == 'char':
+                    self.string += "%s %s%s;\n" % (variable_type,variable_name,array_brackets)
+                    self.string += "%s%s = {" % (variable_name,array_brackets)
+                    array_dims = self.get_array_dims(array_brackets)
+
+                    values_array = []
+                    val_entry = []
+                
+                    if len(array_dims) == 1:
+                        if self.is_number(array_dims[0]):
+                            if isinstance(variable.leaf,tuple):
+                                for val_dim in variable.leaf:
+                                    values_array.append(val_dim.leaf)
+                            else:
+                                values_array.append(variable.leaf.leaf)         # one entry array
+                            for i in range(0,int(array_dims[0])):
+                                if i == (int(array_dims[0])-1):
+                                    self.string += "%s};\n" % values_array[i]
+                                else:
+                                    self.string += "%s," % values_array[i]
+                        else:
+                            print("Cannot declare an array with no position numbers!")
+                            self.string += "Cannot declare an array with no position numbers!\n"
+                    else:
+                        for val in variable.leaf:
+                            for val_dim in val:
+                                val_entry.append(val_dim.leaf)
+                            values_array.append(val_entry)
+                            val_entry = []
+
+                        if self.is_number(array_dims[0]):
+                            for i in range(0,int(array_dims[0])):
+                                for j in range(0,int(array_dims[1])):
+                                    if j == 0:
+                                        self.string += "{"
+                                    if i == (int(array_dims[0])-1) and j == (int(array_dims[1])-1):
+                                        self.string += "%s}};\n" % values_array[i][j]
+                                    elif j == (int(array_dims[1])-1):
+                                        self.string += "%s},\n" % values_array[i][j]
+                                    else:
+                                        self.string += "%s," % values_array[i][j]
+                        else:
+                            print("Cannot declare an array with no position numbers!")
+                            self.string += "Cannot declare an array with no position numbers!\n"
+                else:
+                    array_dims = self.get_array_dims(array_brackets)
+                    if len(array_dims) > 1:
+                        self.string += "%s %s%s = {" % (variable_type,variable_name,array_brackets)
+                        for i in range(0,len(variable.leaf)):
+                            if i == (len(variable.leaf) - 1):
+                                self.string += "%s};\n" % variable.leaf[i].leaf
+                            else:
+                                self.string += "%s," % variable.leaf[i].leaf
+                    else:
+                        self.string += "%s %s%s = %s;\n " % (variable_type,variable_name,array_brackets,variable.leaf.leaf)
+
+            elif variable.type == 'Assign':
+                if variable_type == 'timer' or variable_type == 'msTimer':
+                    self.string += "\'Timers declaration not supported!\'\n"
+                else:
+                    variable_name = variable.children.leaf 
+                    self.string += "%s %s;\n" % (variable_type,variable_name)
+                    self.generate_code_c(variable)              # generate assignment
+            else:
+                variable_name = variable.leaf
+                self.string += "%s %s;\n" % (variable_type,variable_name)
+
+        else:
+            for variable in declaration_param.children:
+                if variable.type == 'Array':                # during multiple declarations is assumed that no array is assigned values
+                    variable_name = variable.leaf[0].leaf
+                    array_brackets = variable.leaf[1]  
+                    if varible_type == None:
+                        pass
+                    else:
+                        self.string += "%s " % variable_type
+                    self.string += "%s%s;\n" % (variable_name,array_brackets)
+
+                elif variable.type == 'Assign':           # declaration with assignment
+                    if (variable_type) == "Timer":
+                         self.string += "\'Timers not supported!\'\n"
+                    else: 
+                         variable_name = variable.children.leaf
+                         print(variable_name)
+                         self.string += "%s %s;\n" % (variable_type,variable_name)
+                         self.generate_code_c(variable)        # generate assignment
+                else:
+                    variable_name = variable.leaf       # declaration without assignment
+                    if (variable_type) == "Timer":
+                        #self.string += "\'Timers not supported!\'\n"
+                        pass
+                    else: 
+                        self.string += "%s %s;\n" % (variable_type,variable_name)
+
+    def generate_assignment_c(self,var):
+        if var.type == 'Assign':
+            variable_name = var.children.leaf
+            assign_value = var.leaf.leaf
+            if not var.leaf.type == 'Array':                 
+                if var.leaf.type == 'Key' or var.leaf.children == []:
+                    self.string += "%s = %s;\n" % (variable_name,assign_value)
+               # elif var.leaf.children == []:
+               #     self.string += "%s = %s;\n" % (variable_name,assign_value)
+                else:                                   # expression
+                    self.string += "%s = " % variable_name
+                    self.generate_code_c(var.leaf)
+                    self.string += ";\n"
+            else:
+                array_brackets = assign_value[1]
+                array_name = assign_value[0].leaf
+                self.string += "%s = %s%s;\n" % (variable_name,array_name,array_brackets)
+
+        elif var.type == 'Assign_Array':
+            variable_name = var.children[0].leaf
+            assign_value = var.leaf.leaf
+            if not var.leaf.type == 'Array':
+                array_brackets = var.children[1]
+                self.string += "%s%s = %s;\n" % (variable_name,array_brackets,assign_value)
+            else:
+                array_brackets_init = var.children[1]
+                array_brackets_assign = assign_value[1]
+                array_name = assign_value[0].leaf
+                self.string += "%s%s = %s%s;\n" % (variable_name,array_brackets_init,array_name,array_brackets_assign)
+
+    def generate_function_c(self,function_param):
+        if function_param.type == 'Function_UD':
+            function_UD_declar = function_param.leaf
+            if function_UD_declar[0].type == 'ID':
+                function_UD_name = function_UD_declar[0].leaf
+                function_UD_type = ""
+            else:
+                function_UD_type = function_UD_declar[0].leaf
+                function_UD_name = function_UD_declar[1].leaf
+
+            if function_UD_type == '':      # name()
+                if (len(function_param.leaf) < 2) or (len(function_param.leaf) == 2 and not function_param.leaf[0].type == 'ID'):
+                    self.string += "%s() {\n" % function_UD_name
+                elif len(function_param.leaf) == 2 and function_param.leaf[0].type == 'ID':  # name(parameters)
+                    self.string += "%s" % function_UD_name
+                    parameters = function_param.leaf[1]
+
+                    if not isinstance(parameters,tuple):                # only one parameter...
+                        if isinstance(parameters.leaf,Node):            # ...without specified type
+                            param_name = parameters.leaf.leaf 
+                            self.string += "(%s) { \n" % param_name
+                        else:                                           # ... with specified type
+                            param_type = parameters.leaf[0].leaf
+                            param_name = parameters.leaf[1].leaf
+                            self.string += "(%s %s) {\n" % (param_type,param_name)
+                    else:
+                        for i in range(0,len(parameters)):                    # several parameters...
+                            if isinstance(parameters[i].leaf,Node):           # ...without specified type
+                                param_name = parameters[i].leaf.leaf
+                                if i == 0: 
+                                    self.string += "(%s," % param_name
+                                elif i == (len(parameters)-1):
+                                    self.string += "%s) {\n" % param_name
+                                else:
+                                    self.string += "%s," % param_name
+                            else:                                             # ... with specified type
+                                param_type_first = parameters[i].leaf[0].leaf
+                                param_name = parameters[i].leaf[1].leaf
+                                if i == 0:
+                                    self.string += "(%s %s," % (param_type,param_name)
+                                elif i == (len(parameters)-1):
+                                    self.string += "%s %s) {\n" % (param_type,param_name)
+                                else: 
+                                    self.string += "%s %s," % (param_type,param_name)
+                statements = function_param.children 
+                if statements == []:
+                    self.string += '\n'
+                elif not isinstance(statements,tuple):
+                    self.generate_code_c(statements)
+                else:
+                    for statement in statements:
+                        self.generate_code_c(statement)
+                self.string += "}\n"
+            else:
+                if len(function_param.leaf) == 2:
+                    self.string += "%s %s() {\n" % (function_UD_type,function_UD_name)
+                else:
+                    self.string += "%s %s " % (function_UD_type,function_UD_name)
+                    parameters = function_param.leaf[2]
+
+                    if not isinstance(parameters,tuple):                # only one parameter...
+                        if isinstance(parameters.leaf,Node):            # ...without specified type
+                            param_name = parameters.leaf.leaf 
+                            self.string += "(%s) {\n" % param_name
+                        else:                                           # ... with specified type
+                            param_type_first = parameters.leaf[0].leaf
+                            param_name = parameters.leaf[1].leaf
+                            self.string += "(%s %s) {\n" % (param_type,param_name)
+                    else:
+                        for i in range(0,len(parameters)):                    # several parameters...
+                            if isinstance(parameters[i].leaf,Node):           # ...without specified type
+                                param_name = parameters[i].leaf.leaf
+                                if i == 0: 
+                                    self.string += "(%s," % param_name
+                                elif i == (len(parameters)-1):
+                                    self.string += "%s} {\n" % param_name
+                                else:
+                                    self.string += "%s," % param_name
+                            else:                                             # ... with specified type
+                                param_type = parameters[i].leaf[0].leaf
+                                param_name = parameters[i].leaf[1].leaf
+                                if i == 0:
+                                    self.string += "(%s %s," % (param_type,param_name)
+                                elif i == (len(parameters)-1):
+                                    self.string += "%s %s) {\n" % (param_type,param_name)
+                                else: 
+                                    self.string += "%s %s," % (param_type,param_name)
+                statements = function_param.children  
+                if statements == []:
+                    self.string += '\n'
+                elif not isinstance(statements,tuple):
+                    self.generate_code_c(statements)
+                else:
+                    for statement in statements:
+                        self.generate_code_c(statement)
+                self.string += "} \n"
+        
+        if function_param.type == 'CAPL_fcn':
+            function_name = function_param.leaf.leaf          # leaf: {ID, _ , ILSetSignal}
+            parameters = function_param.children
+            self.string += "%s" % function_name
+            if not isinstance(parameters,tuple):
+                if parameters == []:         # no parameters
+                    self.string += "()"
+                elif parameters.leaf.type == 'CAPL_fcn':
+                    self.string += "("
+                    self.generate_function_c(parameters.leaf)
+                    self.string += ")"      # \n
+                elif parameters.leaf.type == 'Expression':
+                    self.string += "("
+                    self.generate_code_c(parameters.leaf) # change to separate function
+                    self.string += ")"
+                else:
+                    self.string += "(%s)" % parameters.leaf.leaf    #\n
+            else:
+                for i in range (0,len(parameters)):
+                    if parameters[i] == []:
+                        self.string += "()"     # no parameters
+                    if parameters[i].leaf.type == 'CAPL_fcn':
+                        if i == 0:
+                            self.string += "("
+                            self.generate_function_c(parameters[i].leaf)
+                        elif i == len(parameters)-1:
+                            self.generate_function_c(parameters[i].leaf)
+                            self.string += ")"
+                        else:
+                            self.generate_function_c(parameters[i].leaf)
+                            self.string += ","
+                    elif parameters[i].leaf.type == 'Expression':
+                        if i == 0:
+                            self.string += "("
+                            self.generate_code_c(parameters[i].leaf) # change to separate function
+                        elif i == len(parameters)-1:
+                            self.generate_code_c(parameters[i].leaf) # change to separate function
+                            self.string += ")"
+                        else:
+                            self.generate_code_c(parameters[i].leaf) # change to separate function
+                            self.string += ","
+                    else:
+                        param_name = parameters[i].leaf.leaf
+                        if i == 0:
+                            self.string += "(%s," % param_name
+                        elif i == len(parameters)-1:
+                            self.string += "%s)" % param_name   # \n
+                        else:
+                            self.string += "%s," % param_name
+
+    def generate_message_declaration_c(self,message):
+        message_id = message.leaf.leaf
+        message_name = message.children.leaf
+        self.string += "struct can_frame %s;\n" % message_name
+        self.string += "%s.can_id = %s;\n" % (message_name,message_id)
+
+
+    def generate_code_c(self,tree):
+        print(tree)
+        print("--------------")
+
+        root = tree
+        if not isinstance(root,tuple):
+            if root.type == 'GlobalVars_decl':
+                declarations = root.children
+                if declarations == []:
+                    pass
+                elif not isinstance(declarations,tuple):
+                    if declarations.type == 'Decl-MSG':
+                        self.generate_message_declaration_c(declarations)
+                    elif declarations.type == 'COMMENT':
+                        self.generate_code_c(declarations)
+                    else:
+                        self.generate_declaration_c(declarations)
+                else:
+                    for declaration in declarations:
+                        if declaration.type == 'Decl-MSG':
+                             self.generate_message_declaration_c(declaration)
+                        elif declaration.type == 'COMMENT':
+                             self.generate_code_c(declaration)
+                        else:
+                            self.generate_declaration_c(declaration)
+
+            elif root.type == 'Declaration':
+                self.generate_declaration_c(root)
+
+            elif root.type == 'Decl-MSG':
+                self.generate_message_declaration_c(root)
+
+            elif root.type == 'Assign' or root.type == 'Assign_Array':
+                self.generate_assignment_c(root)
+
+            elif root.type == 'Expression' or root.type == 'Assign_OP':
+                operator = root.leaf
+                if not isinstance(root.children,tuple):         # unary expression
+                    if operator == '!' or operator == '~':
+                        self.string += "%s%s" % (operator,root.children.leaf)
+                    else:
+                        self.string += "%s%s" % (root.children.leaf,operator)
+                else:
+                    if isinstance(root.children[0].leaf,Node) and isinstance(root.children[1].leaf,Node):      # both leaves are functions
+                        self.generate_function_c(root.children[0])
+                        self.string += " %s " % operator
+                        self.generate_function_c(root.children[1])
+                    elif isinstance(root.children[0].leaf,Node) and not isinstance(root.children[1].leaf,Node):      # leaf is a function
+                        self.generate_function_c(root.children[0])
+                        self.string += " %s %s" % (operator,root.children[1].leaf)
+                    elif not isinstance(root.children[0].leaf,Node) and isinstance(root.children[1].leaf,Node):      # leaf is a function
+                        self.string += "\t%s %s " % (root.children[0].leaf,operator)
+                        self.generate_function_c(root.children[1])
+                    else:
+                        self.string += "%s %s %s" % (root.children[0].leaf,operator,root.children[1].leaf)
+                    if root.type == 'Assign_OP':
+                        self.string += ';\n'                     # new line follows assignment
+
+            elif root.type == 'Logic_EXPR':
+                for i in range(0,len(root.children)):
+                    self.generate_code_c(root.children[i])            # iterate through expressions
+                    if not i == len(root.children)-1:
+                        if not isinstance(root.leaf,tuple):
+                            operator = root.leaf
+                        else:   
+                            operator = root.leaf[i]
+                        self.string += " %s " % operator
+
+            elif root.type == 'Function_UD':             # translation of user-defined functions
+                #self.string += self.generate_function(root,self.inside)
+                self.generate_function_c(root)
+                self.string += "\n"
+
+            elif root.type == 'CAPL_fcn':             # translation of CAPL defined functions
+                function_name = root.leaf.leaf 
+                if function_name == 'ILSetSignal':          # sets the transferred signal to the provided physical value
+                    self.string += "\tILSetSignal"
+                    parameters = root.children
+                    message_name = parameters[0].leaf.leaf[0].leaf
+                    signal_name = parameters[0].leaf.leaf[1].leaf
+                    signal_value = parameters[1].leaf.leaf
+                    self.string += "(%s::%s,%s)" % (message_name,signal_name,signal_value)
+
+                elif function_name == 'getSignal':          # gets the valueo of a signal
+                    self.string += "getSignal"
+                    parameter = root.children.leaf
+                    values = parameter.leaf
+                    if(parameter.type == 'msg_sig'):
+                        message_name = values[0].leaf
+                        signal_name = values[1].leaf
+                        self.string += "(%s::%s)" % (message_name,signal_name)
+
+                else:
+                    self.generate_function_c(root)
+                    self.string += ";\n"
+
+            elif root.type == 'IF':
+                self.string += 'if('
+                self.generate_code_c(root.leaf)
+                self.string += ') {\n'
+                if not isinstance(root.children,tuple):
+                    self.string += '\t'
+                    self.generate_code_c(root.children)
+                else:
+                    for root_children in root.children:
+                        self.string += '\t'
+                        self.generate_code_c(root_children)
+                self.string += '}\n'
+
+            elif root.type == 'IF-ELSE':
+                self.string += 'if('
+                self.generate_code_c(root.leaf)
+                self.string += ') {\n'
+                if not isinstance(root.children[0],tuple):
+                    self.string += '\t'
+                    self.generate_code_c(root.children[0])
+                else:
+                    for root_children in root.children[0]:
+                        self.string += '\t'
+                        self.generate_code_c(root_children)
+                self.string += 'else {\n'
+                if not isinstance(root.children[1],tuple):
+                    self.string += '\t'
+                    self.generate_code_c(root.children[1])
+                else:
+                    for root_children in root.children[1]:
+                        self.string += '\t'
+                        self.generate_code_c(root_children)
+                self.string += '}\n'
+
+            elif root.type == 'WHILE':
+                self.string += 'while( '
+                self.generate_code_c(root.leaf)
+                self.string += ') {\n'
+                if not isinstance(root.children,tuple):
+                    self.string += '\t'
+                    self.generate_code_c(root.children)
+                else:
+                    for root_children in root.children:
+                        self.string += '\t'
+                        self.generate_code_c(root_children)
+                self.string += '}\n'
+
+            elif root.type == 'DO-WHILE':
+                self.string += 'do {\n'
+                if not isinstance(root.children,tuple):
+                    self.string += '\t'
+                    self.generate_code_c(root.children)
+                else:
+                    for root_children in root.children:
+                        self.string += '\t'
+                        self.generate_code_c(root_children)
+                self.string += '}\n while( '
+                self.generate_code_c(root.leaf)
+                self.string += ');\n'
+
+            elif root.type == 'FOR':
+                self.string += '\tfor('
+                iter_var = root.leaf                # manipulating with iteration variable
+                self.generate_declaration_c(iter_var[0])
+                self.generate_code_c(iter_var[1])
+                self.string+= ';'
+                self.generate_code_c(iter_var[2])
+                self.string += ') {\n'
+                if not isinstance(root.children,tuple):
+                    self.string += '\t'
+                    self.generate_code_c(root.children)
+                else:
+                    for root_children in root.children:
+                        self.string += '\t'
+                        self.generate_code_c(root_children)
+                self.string += "}\n"
+
+            elif root.type == 'SWITCH':
+                self.string += 'switch('
+                case_var = root.leaf.leaf
+                self.string += '%s) {\n' % case_var
+                for case_single in root.children:
+                    case = case_single.leaf
+                    if case == 'Default':
+                        self.string += "default: "
+                    else:
+                        self.string += "\t\tcase "
+                        if type(case) == Node:
+                            case = case.leaf
+                        self.string += "%s: " % case
+                    self.string += "\t"
+                    for stmt in case_single.children:        # translation of statements after case
+                        if stmt.type == 'BREAK':
+                            self.string += "\t\t break;\n"
+                        else:
+                            self.generate_code_c(stmt)
+                self.string += "}\n"
+
+            elif root.type == 'RETURN':
+                self.string += '\treturn '
+                if isinstance(root.leaf,Node):
+                    self.string += '%s;\n' % root.leaf.leaf
+
+
+            elif root.type == 'COMMENT':
+                self.string += " %s \n" % root.leaf
+
+            elif root.type == 'CAPL_event':
+                statements = root.children
+                if isinstance(root.leaf,tuple):
+                    event_name = root.leaf[0]       # on envVar, ...
+                else:
+                    event_name = root.leaf.split("on ")[1]   # get event name, i.e. preStart, start, ... 
+                if event_name == 'on message':
+                    message = root.leaf[1].leaf
+                    with open('eventsHandler/msgEvents.c','r') as f_init:
+                        string_ev = ""
+                        s = mmap.mmap(f_init.fileno(), 0, access=mmap.ACCESS_READ)
+                        f_data = list(f_init.read())
+
+                        cb_index = s.find(b'recvmsg_cb')
+                        switch_ix = s.find(b'switch',cb_index)
+                        s.close()
+                    if switch_ix == -1:
+                        with open('eventsHandler/msgEvents.c') as fin, open('eventsHandler/msgEvents_temp.c','w') as fout:
+                            for line in fin:
+                                fout.write(line)
+                                if line == '/* Events */\n':
+                                   next_line = next(fin)
+                                   switch_str = 'switch(msg_name) {\n'
+                                   switch_str += 'case %s: %s_event(); break;\n}\n' % (message,message)
+                                   fout.write(switch_str)
+                                   fout.writelines(next_line)
+                    else:
+                        with open('eventsHandler/msgEvents.c') as fin, open('eventsHandler/msgEvents_temp.c','w') as fout:
+                            for line in fin:
+                                fout.write(line)               
+                                if line == 'switch(msg_name) {\n':
+                                   next_line = next(fin)
+                                   switch_str = 'case %s: %s_event(); break;\n}\n' % (message,message)
+                                   fout.write(switch_str)
+                                   fout.writelines(next_line) 
+
+                    os.remove('eventsHandler/msgEvents.c')
+                    os.rename('eventsHandler/msgEvents_temp.c','eventsHandler/msgEvents.c')
+                    self.string += "void %s_event() {\n" % message
+                    
+                else:
+                    self.string += "void %s_event() {\n" % event_name
+                if not isinstance(statements,tuple):
+                    self.generate_code_c(statements)
+                else:
+                    for statement in statements:
+                        self.generate_code_c(statement)
+                self.string += "}\n\n"
+
+
+        else:
+            for entry in root:
+                self.generate_code_c(entry)
+
+        
     def write_to_file(self):
-        f = open('testScript.txt','w')
+        f = open('generatedScript.mac','w')
         self.string = (self.string).replace("Int","Integer")
         self.string = (self.string).replace("Word","UInteger")      # unsigned 16-bits
         self.string = (self.string).replace("Dword","ULong")        # unsigned 32-bits
@@ -1296,8 +1847,12 @@ class Parser:
         f.write(self.string)
         print("WWB Script generated.")
 
-    def __init__(self,caplFile):
+    def write_to_file_c(self):
+        f = open('generatedScript.c','w')
+        f.write(self.string)
+        print("C Script generated.")
 
+    def get_ast_tree(self,caplFile):
         lexer_init = Lexer()                         # create instance of Lexer
         lexer_init.build()                           # build the lexer
         if isinstance(caplFile,str):                # program called from command line
@@ -1311,21 +1866,15 @@ class Parser:
             yacc.yacc(module = self)
             ast_tree = yacc.parse(open(caplFile.get()).read())
 
-        
-        #if isinstance(ast_tree,tuple):
-        #    for node in ast_tree:
-        #        print(str(node)+"\n")  
-        #else:
-        #    if isinstance(ast_tree.children,tuple):
-        #        for node in ast_tree.children:
-        #            print(str(node))
-        #    else:
-        #        pass
-                #print("WHOLE TREE:")
-                #print(ast_tree)
+            return ast_tree
 
-        self.generate_code(ast_tree) 
-        self.write_to_file()
+    def __init__(self):
+        print("Parser Initialized")
+        #self.generate_code(ast_tree) 
+        #self.write_to_file()
+
+        #self.generate_code_c(ast_tree)
+        #self.write_to_file_c()
 
         #ast_tree = ast.parse(open(caplFile.get()).read())
         #print(ast.dump(ast_tree))
