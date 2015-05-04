@@ -1,12 +1,17 @@
 # RestbusSim-Converter
 Converter for simulation scenarios of automotive control units.
 
-This application converts a created restbus simulation in Vector CANoe to PROVEtech:TA. The main feature is the conversion from CAPL scripting language to WinWrap Basic. Other functionality supported: conversion of simple GUI from CANoe to PROVEtech:TA; automated settings of important tags for PROVEtech:TA-specific XML files.
+This application converts a created restbus simulation in Vector CANoe to PROVEtech:TA. The main feature is the conversion from CAPL scripting language to WinWrap Basic. Other functionality supported: conversion of simple GUI from CANoe to PROVEtech:TA; automated settings of important tags for PROVEtech:TA-specific XML files. The feature of the conversion from CAPL to C for the Linux platform has been added. The translation of CAPL's on message events is introduced. Events are handled by using SocketCAN and libev.
 
-The application is written in Python.
+The program is written in Python 3.4. The modules needed for compiling the program are:
+- `io`, `string`, `mmap`, `os`, `tkinter`, `lex` and `yacc` (lex and yacc are included in Ply package available at: http://www.dabeaz.com/ply/ply-3.6.tar.gz)
 
-Edit 4/2015:
-Added the feature of the conversion from CAPL to C. The translation of CAPL's on message events is introduced. Events are handled by using SocketCAN and libev.
+For running the tool, tkinterApp.py file needs to be executed. Conversions are run by using the GUI. 
+
+Steps for code conversion: <i> GUI & Code Conversion </b> -> <i> Convert CAPL -> WWB </i> / <i> Convert CAPL -> C </i>
+
+Steps for GUI conversion: <i> GUI & Code Conversion </i> -> <i> Convert XVP -> AOF </i>
+
 
 ## Project files
 <b> Note: </b> the files will be renamed
