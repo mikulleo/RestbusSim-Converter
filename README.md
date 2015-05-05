@@ -36,6 +36,8 @@ Steps for GUI conversion: <i> GUI & Code Conversion </i> -> <i> Convert XVP -> A
   
 ### Reaction on received messages in C
 
+For translating message events, the `msgEvents.c` file must be included in path `eventsHandler/msgEvents.c`.
+
 - `socketCan.h`, `socketCan.c`
 
   Set up of the connection over CAN bus
